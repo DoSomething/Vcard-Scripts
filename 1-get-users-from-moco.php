@@ -16,7 +16,7 @@ $args = (array) $opts;
 $arg_page = !empty($args['page']) ? $args['page'] : 1;
 $arg_last = !empty($args['last']) ? $args['last'] : 0;
 
-if (!empty($args['batch']) && $args['batch'] => 1 && $args['batch'] <= 1000) {
+if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
   $moco->batchSize = (int) $args['batch'];
 }
 
