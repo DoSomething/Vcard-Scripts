@@ -21,21 +21,21 @@ if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
 }
 
 // --- Logger ---
-$logNamePostfix = '-get-users-from-moco'
+$logNamePrefix = $moco->batchSize
  . '-' . $argPage
  . '-' . $argLast
- . '-' . $moco->batchSize;
+ . '-get-users-from-moco-';
 
 // File.
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
-$logfile = fopen(__DIR__ . '/log/output' . $logNamePostfix . '.log', "w");
+$logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'output.log', "w");
 $logFileStream = new StreamHandler($logfile);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
 // Warning File.
-$logfile = fopen(__DIR__ . '/log/warning' . $logNamePostfix . '.log', "w");
+$logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'warning.log', "w");
 $logFileStream = new StreamHandler($logfile, Logger::WARNING);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
