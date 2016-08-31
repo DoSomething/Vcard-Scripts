@@ -20,6 +20,12 @@ if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
   $moco->batchSize = (int) $args['batch'];
 }
 
+// --- Imports ---
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
+use Carbon\Carbon;
+
 // --- Logger ---
 $logNamePrefix = $moco->batchSize
  . '-' . $argPage
@@ -27,9 +33,6 @@ $logNamePrefix = $moco->batchSize
  . '-get-users-from-moco-';
 
 // File.
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Formatter\LineFormatter;
 $logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'output.log', "w");
 $logFileStream = new StreamHandler($logfile);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
@@ -96,11 +99,13 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
         'phone'   => $phoneNumber
       ]);
 
+      $createdAt = (string) $profile->created_at;
       $user = [
         'id'           => (string) $profile['id'],
         'phone_number' => $phoneNumber,
         'email'        => (string) $profile->email,
         'status'       => $status,
+        'created_at'   => Carbon::parse($createdAt)->format('Y-m-d'),
       ];
       $ret->hMSet(REDIS_KEY . ":" . $profile['id'], $user);
     }
