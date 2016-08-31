@@ -8,7 +8,8 @@ $opts = CLIOpts\CLIOpts::run("
 {self}
 -p, --page <page> MoCo profiles start page, defaults to 1
 -l, --last <page> MoCo profiles last page, defaults to 0
--b, --batch <1-1000> MoCo profiles batch size, defaults to 1000
+-b, --batch <1-1000> MoCo profiles batch size, defaults to 100
+-s, --sleep <0-60> Sleep between MoCo calls, defaults to 0
 -h, --help Show this help
 ");
 
@@ -18,6 +19,10 @@ $argLast = !empty($args['last']) ? $args['last'] : 0;
 
 if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
   $moco->batchSize = (int) $args['batch'];
+}
+
+if (!empty($args['sleep']) && $args['sleep'] >= 1 && $args['sleep'] <= 60) {
+  $moco->sleep = (int) $args['sleep'];
 }
 
 // --- Imports ---
@@ -45,7 +50,8 @@ $log->pushHandler($logFileStream);
 
 // --- Progress ---
 $progressCurrent = ($argPage > 1) ? $moco->batchSize * $argPage : 0;
-$progressMax     = ($argLast > 0) ? $moco->batchSize * $argLast : 5219581;
+// Current count: https://secure.mcommons.com/profiles?count_only=true
+$progressMax     = ($argLast > 0) ? $moco->batchSize * $argLast : 5221749;
 $progress = new \ProgressBar\Manager(0, $progressMax);
 $progress->update($progressCurrent);
 

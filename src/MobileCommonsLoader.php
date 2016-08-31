@@ -12,7 +12,8 @@ class MobileCommonsLoader
 
   private $moco = false;
   private $log = false;
-  public $batchSize = 1000;
+  public $batchSize = 100;
+  public $sleep = 0;
 
   function __construct(Array $config, LoggerInterface $logger) {
     $this->moco = new \MobileCommons($config);
@@ -49,6 +50,10 @@ class MobileCommonsLoader
     $numReturned = (int) $profiles->profile->count();
 
     $callback($profiles);
+
+    if ($this->sleep > 0) {
+      sleep($this->sleep);
+    }
 
     if ($limit == 0 || $page < $limit) {
       return $this->profilesEachBatch($callback, $page + 1, $limit);
