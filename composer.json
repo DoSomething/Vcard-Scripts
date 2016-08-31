@@ -15,7 +15,8 @@
     "monolog/monolog": "^1.21",
     "dosomething/mobilecommons-php": "^1.0",
     "deweller/cliopts": "^1.0",
-    "josegonzalez/dotenv": "^2.0"
+    "josegonzalez/dotenv": "^2.0",
+    "guiguiboy/php-cli-progress-bar": "@dev"
   },
   "autoload": {
     "psr-4": {

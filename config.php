@@ -48,9 +48,9 @@ $logFileStream = new StreamHandler($logfile, Logger::WARNING);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
 // Console.
-$logConsoleStream = new ErrorLogHandler();
-$logConsoleStream->setFormatter(new LineFormatter($output, $dateFormat));
-$log->pushHandler($logConsoleStream);
+// $logConsoleStream = new ErrorLogHandler();
+// $logConsoleStream->setFormatter(new LineFormatter($output, $dateFormat));
+// $log->pushHandler($logConsoleStream);
 
 
 // --- Objects ---
