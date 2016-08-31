@@ -1,0 +1,25 @@
+{
+  "name": "Lose your V card scripts",
+  "type": "project",
+  "version": "0.0.1",
+  "license" : "MIT",
+  "authors": [
+    {
+      "name": "DoSomething and contributors",
+      "homepage": "http://www.dosomething.org"
+    }
+  ],
+  "require": {
+    "php": ">= 5.6.0",
+    "dosomething/northstar": "v0.4",
+    "monolog/monolog": "^1.21",
+    "dosomething/mobilecommons-php": "^1.0",
+    "deweller/cliopts": "^1.0",
+    "josegonzalez/dotenv": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "DoSomething\\Vcard\\": "src/"
+    }
+  }
+}
