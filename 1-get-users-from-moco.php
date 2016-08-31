@@ -8,7 +8,7 @@ $opts = CLIOpts\CLIOpts::run("
 {self}
 -p, --page <page> MoCo profiles start page, defaults to 1
 -l, --last <page> MoCo profiles last page, defaults to 0
--b, --batch <1-1000> MoCo profiles batch size, defaults to 100
+-b, --batch <1-1000> MoCo profiles batch size, defaults to 1000
 -h, --help Show this help
 ");
 

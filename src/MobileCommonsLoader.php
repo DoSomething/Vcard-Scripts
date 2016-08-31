@@ -12,7 +12,7 @@ class MobileCommonsLoader
 
   private $moco = false;
   private $log = false;
-  public $batchSize = 100;
+  public $batchSize = 1000;
 
   function __construct(Array $config, LoggerInterface $logger) {
     $this->moco = new \MobileCommons($config);
