@@ -65,8 +65,9 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
       try {
         $progress->advance();
       } catch (InvalidArgumentException $e) {
-        // Skip.
+        // Ignore current > max error.
       } catch (Exception $e) {
+        // Log other errors.
         $log->error($e);
       }
     }
@@ -78,6 +79,7 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
 
 }, $argPage, $argLast);
 
+// Set 100% when estimated $progressMax turned out to be incorrect.
 if ($progress->getRegistry()->getValue('current') < $progressMax) {
   $progress->update($progressMax);
 }
