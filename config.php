@@ -24,10 +24,10 @@ $moco_config = array(
 use DoSomething\Northstar\NorthstarClient;
 use DoSomething\Vcard\MobileCommonsLoader;
 use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Handler\ErrorLogHandler;
+// use Monolog\Handler\StreamHandler;
+// use Monolog\Handler\ErrorLogHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
-use Monolog\Formatter\LineFormatter;
+// use Monolog\Formatter\LineFormatter;
 
 // --- Logger ---
 $log = new Logger('vcard');
@@ -37,16 +37,6 @@ $dateFormat = "Y-m-d H:i:s";
 // the default output format is "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 $output = "[%datetime%] %level_name%: %message%.";
 
-// File.
-$logfile = fopen(__DIR__ . '/log/output.log', "w");
-$logFileStream = new StreamHandler($logfile);
-$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
-$log->pushHandler($logFileStream);
-// Warning File.
-$logfile = fopen(__DIR__ . '/log/warning.log', "w");
-$logFileStream = new StreamHandler($logfile, Logger::WARNING);
-$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
-$log->pushHandler($logFileStream);
 // Console.
 // $logConsoleStream = new ErrorLogHandler();
 // $logConsoleStream->setFormatter(new LineFormatter($output, $dateFormat));

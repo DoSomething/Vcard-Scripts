@@ -20,6 +20,26 @@ if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
   $moco->batchSize = (int) $args['batch'];
 }
 
+// --- Logger ---
+$logNamePostfix = '-get-users-from-moco'
+ . '-' . $argPage
+ . '-' . $argLast
+ . '-' . $moco->batchSize;
+
+// File.
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
+$logfile = fopen(__DIR__ . '/log/output' . $logNamePostfix . '.log', "w");
+$logFileStream = new StreamHandler($logfile);
+$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+$log->pushHandler($logFileStream);
+// Warning File.
+$logfile = fopen(__DIR__ . '/log/warning' . $logNamePostfix . '.log', "w");
+$logFileStream = new StreamHandler($logfile, Logger::WARNING);
+$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+$log->pushHandler($logFileStream);
+
 // --- Progress ---
 $progressCurrent = ($argPage > 1) ? $moco->batchSize * $argPage : 0;
 $progressMax     = ($argLast > 0) ? $moco->batchSize * ($argLast + 1) : 5219581;
