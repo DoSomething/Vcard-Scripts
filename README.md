@@ -26,6 +26,23 @@ Options:
   -h, --help           Show this help
 ```
 
+#### Benchmark
+##### Batch 100, pages 30
+```
+$ time php 1-get-users-from-moco.php -l 30
+3000/3000 [==============================================>] 100.00% 00:00:00
+php 1-get-users-from-moco.php -l 30  2.59s user 0.54s system 2% cpu 2:16.96 total
+```
+Result: 623 users.
+
+##### Batch 1000, pages 3
+```
+$ time php 1-get-users-from-moco.php -l 3 -b 1000
+3000/3000 [==============================================>] 100.00% 00:00:00
+php 1-get-users-from-moco.php -l 3 -b 1000  2.01s user 0.42s system 2% cpu 1:23.68 total
+```
+Result: 623 users.
+
 ### Step 2: Match MoCo users to Northstar and generate new fields
 TODO
 
