@@ -11,6 +11,7 @@ A collection of scripts for DoSomething Lose Your Vcard campaign
 - `composer install`
 - `cp .env.example .env`
 - Update .env settings
+- `mkdir log`
 
 ## Usage
 ### Step 1: Save all MoCo profiles to Redis
