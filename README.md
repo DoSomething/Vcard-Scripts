@@ -29,9 +29,9 @@ Options:
 #### Benchmark
 ##### Batch 100, pages 30
 ```
-$ time php 1-get-users-from-moco.php -l 30
+$ time php 1-get-users-from-moco.php -l 30 -b 100
 3000/3000 [==============================================>] 100.00% 00:00:00
-php 1-get-users-from-moco.php -l 30  2.59s user 0.54s system 2% cpu 2:16.96 total
+php 1-get-users-from-moco.php -l 30 -b 100  2.59s user 0.54s system 2% cpu 2:16.96 total
 ```
 Result: 623 users.
 
