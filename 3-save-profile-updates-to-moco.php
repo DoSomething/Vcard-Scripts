@@ -72,15 +72,37 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 
       // Load user from redis.
       $mocoRedisUser = $redisRead->hGetAll($key);
-      $log->debug('{current} of {max}, iterator {it}: Saving user #{phone}, MoCo id {id}', [
+
+      $mocoProfileUpdate = [
+        'phone_number'       => $mocoRedisUser['phone_number'],
+        'northstar_id'       => $mocoRedisUser['northstar_id'],
+        'vcard_share_url_id' => $mocoRedisUser['vcard_share_url_id'],
+        'birthdate'          => $mocoRedisUser['birthdate'],
+        'Date of Birth'      => $mocoRedisUser['birthdate'],
+      ];
+
+      $logMessage = '{current} of {max}, iterator {it}: '
+        . 'Saving profile #{phone}, MoCo id {id}, fields: {fields}';
+
+      $log->debug($logMessage, [
         'current' => $progressData->current,
         'max'     => $progressData->max,
         'it'      => $iterator,
         'phone'   => $mocoRedisUser['phone_number'],
         'id'      => $mocoRedisUser['id'],
+        'fields'  => json_encode($mocoProfileUpdate),
       ]);
 
-
+      $result = $moco->updateProfile($mocoProfileUpdate);
+      if ($result) {
+        $log->debug('Succesfully saved profile #{phone}, MoCo id {id}', [
+          'phone'   => $mocoRedisUser['phone_number'],
+          'id'      => $mocoRedisUser['id'],
+        ]);
+        $ret->hSet($key, 'moco_profile_status', 'updated');
+      } else {
+        $ret->hSet($key, 'moco_profile_status', 'failed');
+      }
     }
 
     // Batch processed.
