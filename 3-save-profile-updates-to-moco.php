@@ -73,13 +73,31 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
       // Load user from redis.
       $mocoRedisUser = $redisRead->hGetAll($key);
 
+      // Skip unprocessed users.
+      if (empty($mocoRedisUser['step2_status'])) {
+        $logMessage = '{current} of {max}, iterator {it}: '
+          . 'Skipping profile #{phone}, MoCo id {id}: '
+          . 'it hasn\'t been processed yet. Please get back to it';
+
+        $log->warning($logMessage, [
+          'current' => $progressData->current,
+          'max'     => $progressData->max,
+          'it'      => $iterator,
+          'phone'   => $mocoRedisUser['phone_number'],
+          'id'      => $mocoRedisUser['id'],
+        ]);
+        continue;
+      }
+
       $mocoProfileUpdate = [
         'phone_number'       => $mocoRedisUser['phone_number'],
-        'northstar_id'       => $mocoRedisUser['northstar_id'],
         'vcard_share_url_id' => $mocoRedisUser['vcard_share_url_id'],
-        'birthdate'          => $mocoRedisUser['birthdate'],
-        'Date of Birth'      => $mocoRedisUser['birthdate'],
       ];
+      if (!empty($mocoRedisUser['northstar_id'])) {
+        $mocoProfileUpdate['northstar_id']  = $mocoRedisUser['northstar_id'];
+        $mocoProfileUpdate['birthdate']     = $mocoRedisUser['birthdate'];
+        $mocoProfileUpdate['Date of Birth'] = $mocoRedisUser['birthdate'];
+      }
 
       $logMessage = '{current} of {max}, iterator {it}: '
         . 'Saving profile #{phone}, MoCo id {id}, fields: {fields}';
@@ -99,9 +117,9 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
           'phone'   => $mocoRedisUser['phone_number'],
           'id'      => $mocoRedisUser['id'],
         ]);
-        $ret->hSet($key, 'moco_profile_status', 'updated');
+        $ret->hSet($key, 'step3_status', 'updated');
       } else {
-        $ret->hSet($key, 'moco_profile_status', 'failed');
+        $ret->hSet($key, 'step3_status', 'failed');
       }
     }
 
