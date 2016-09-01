@@ -44,11 +44,16 @@ $output = "[%datetime%] %level_name%: %message%.";
 
 
 // --- Objects ---
+// Northstar.
 $northstar = new NorthstarClient($northstar_config);
+// Mobile Commons
 $moco = new MobileCommonsLoader($moco_config, $log);
+// Bitly
+$bitly = new \Hpatoio\Bitly\Client(BITLY_ACCESS_TOKEN);
+// Redis
 $redis = new Redis();
 $redis->pconnect(REDIS_HOST, REDIS_PORT);
 $redisRead = new Redis();
 $redisRead->connect(REDIS_HOST, REDIS_PORT);
 define("REDIS_KEY", 'vcard:moco_users');
-define('REDIS_SCAN_COUNT', 2);
+define('REDIS_SCAN_COUNT', 100);

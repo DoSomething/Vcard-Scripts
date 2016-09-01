@@ -74,16 +74,21 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 
       // Load user from redis.
       $mocoRedisUser = $redisRead->hGetAll($key);
-      $log->debug('{current} of {max}, iterator {it}: Loading user #{phone}', [
+      $log->debug('{current} of {max}, iterator {it}: Loading user #{phone}, MoCo id {id}', [
         'current' => $progress->getRegistry()->getValue('current'),
         'max'     => $progress->getRegistry()->getValue('max'),
         'it'      => $iterator,
         'phone'   => $mocoRedisUser['phone_number'],
+        'id'      => $mocoRedisUser['id'],
       ]);
 
       // Match user on Northstar
       $northstarUser = $northstarLoader->loadFromMocoData($mocoRedisUser);
       if ($northstarUser) {
+        $log->debug('Matched Northstar user id {northstar_id} with MoCo id {id}', [
+          'northstar_id' => $northstarUser->id,
+          'id' => $mocoRedisUser['id'],
+        ]);
         $updateValues = [
           'northstar_id' => $northstarUser->id,
           'birthdate' => Carbon::parse((string) $northstarUser->birthdate)->format('Y-m-d'),
@@ -97,7 +102,24 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
       $link = $baseURL;
       $link .= '?source=';
       $link .= $link_source;
-      $ret->hSet($key, 'vcard_share_url_full', $link);
+      if (empty($mocoRedisUser['vcard_share_url_full'])) {
+        $ret->hSet($key, 'vcard_share_url_full', $link);
+      }
+
+      if (empty($mocoRedisUser['vcard_share_url_id'])) {
+        $log->debug('Generating bitly link for {link}', [
+          'link'   => $link,
+        ]);
+        $bitlyLink = $bitly->Shorten(["longUrl" => $link]);
+        if (!empty($bitlyLink['url'])) {
+          $shortenedLink = $bitlyLink['url'];
+          $log->debug('Shortened link for {link} is {shortened_link}', [
+            'link'           => $link,
+            'shortened_link' => $shortenedLink,
+          ]);
+          $ret->hSet($key, 'vcard_share_url_id', $shortenedLink);
+        }
+      }
     }
 
     // Batch processed.
