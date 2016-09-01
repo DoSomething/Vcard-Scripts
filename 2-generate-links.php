@@ -146,7 +146,7 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
-if ($progressData->current < $progressData->max) {
+if ($progressData->current != $progressData->max) {
   $progress->update(
     $progressData->max,
     $progressData->max . '/' . $progressData->max
