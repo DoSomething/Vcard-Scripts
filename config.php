@@ -7,6 +7,22 @@ require __DIR__ . '/vendor/autoload.php';
 $dotenv = new josegonzalez\Dotenv\Loader('./.env');
 $dotenv->parse()->define();
 
+// Check that everything is set.
+$requiredConstants = [
+  'NORTHSTAR_URL',
+  'NORTHSTAR_API_KEY',
+  'MOCO_USERNAME',
+  'MOCO_PASSWORD',
+  'BITLY_ACCESS_TOKEN',
+  'REDIS_HOST',
+  'REDIS_PORT',
+];
+foreach ($requiredConstants as $requiredConstant) {
+  if (!defined($requiredConstant)) {
+    exit($requiredConstant . ' must be declared in .env file.' . PHP_EOL);
+  }
+}
+
 // --- Settings ---
 // Northstar
 $northstar_config = [
