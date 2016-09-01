@@ -21,6 +21,7 @@ use Carbon\Carbon;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Zend\ProgressBar\ProgressBar;
 
 // --- DS Imports ---
 use DoSomething\Vcard\NorthstarLoader;
@@ -46,10 +47,15 @@ $log->pushHandler($logFileStream);
 echo 'Logging to ' . $mainLogName . PHP_EOL;
 
 // --- Progress ---
-$progressCurrent = !empty($args['last']) ? (int) $args['last'] : 0;
-$progressMax = $redisRead->dbSize();
-$progress = new \ProgressBar\Manager(0, $progressMax);
-$progress->update($progressCurrent);
+$progressData = (object) [
+  'current' => !empty($args['last']) ? (int) $args['last'] : 0,
+  'max' => $redisRead->dbSize(),
+];
+$progress = new ProgressBar(
+  $progressAdapter,
+  $progressData->current,
+  $progressData->max
+);
 
 // --- Get data ---
 // Retry when we get no keys back.
@@ -57,27 +63,23 @@ $northstarLoader = new NorthstarLoader($northstar, $log);
 $redisRead->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUNT)) {
 
-  // Redis transcation.
+  // Initiate Redis transcation.
   $ret = $redis->multi();
 
   // Process batch.
   try {
     foreach($keysBatch as $key) {
       // Monitor progress.
-      try {
-        $progress->advance();
-      } catch (InvalidArgumentException $e) {
-        // Ignore current > max error.
-      } catch (Exception $e) {
-        // Log other errors.
-        $log->error($e);
-      }
+      $progress->update(
+        ++$progressData->current,
+        $progressData->current . '/' . $progressData->max
+      );
 
       // Load user from redis.
       $mocoRedisUser = $redisRead->hGetAll($key);
       $log->debug('{current} of {max}, iterator {it}: Loading user #{phone}, MoCo id {id}', [
-        'current' => $progress->getRegistry()->getValue('current'),
-        'max'     => $progress->getRegistry()->getValue('max'),
+        'current' => $progressData->current,
+        'max'     => $progressData->max,
         'it'      => $iterator,
         'phone'   => $mocoRedisUser['phone_number'],
         'id'      => $mocoRedisUser['id'],
@@ -144,8 +146,12 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
-if ($progress->getRegistry()->getValue('current') < $progressMax) {
-  $progress->update($progressMax);
+if ($progressData->current < $progressData->max) {
+  $progress->update(
+    $progressData->max,
+    $progressData->max . '/' . $progressData->max
+  );
 }
+$progress->finish();
 
 $redisRead->close();

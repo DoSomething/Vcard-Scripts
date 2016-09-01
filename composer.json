@@ -16,9 +16,9 @@
     "dosomething/mobilecommons-php": "^1.0",
     "deweller/cliopts": "^1.0",
     "josegonzalez/dotenv": "^2.0",
-    "guiguiboy/php-cli-progress-bar": "@dev",
     "nesbot/carbon": "^1.21",
-    "hpatoio/bitly-api": "^2.0"
+    "hpatoio/bitly-api": "^2.0",
+    "zendframework/zend-progressbar": "^2.5"
   },
   "autoload": {
     "psr-4": {

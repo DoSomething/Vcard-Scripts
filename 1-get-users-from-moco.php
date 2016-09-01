@@ -26,10 +26,11 @@ if (!empty($args['sleep']) && $args['sleep'] >= 1 && $args['sleep'] <= 60) {
 }
 
 // --- Imports ---
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Formatter\LineFormatter;
 use Carbon\Carbon;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Zend\ProgressBar\ProgressBar;
 
 // --- Logger ---
 $logNamePrefix = $moco->batchSize
@@ -49,28 +50,32 @@ $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
 
 // --- Progress ---
-$progressCurrent = ($argPage > 1) ? $moco->batchSize * $argPage : 0;
 // Current count: https://secure.mcommons.com/profiles?count_only=true
-$progressMax     = ($argLast > 0) ? $moco->batchSize * $argLast : 5221749;
-$progress = new \ProgressBar\Manager(0, $progressMax);
-$progress->update($progressCurrent);
+define('CURRENT_MOCO_PROFILES_COUNT', 5221749);
+$progressData = (object) [
+  'current' => ($argPage > 1) ? $moco->batchSize * $argPage : 0,
+  'max' => ($argLast > 0) ? $moco->batchSize * $argLast : CURRENT_MOCO_PROFILES_COUNT,
+];
+$progress = new ProgressBar(
+  $progressAdapter,
+  $progressData->current,
+  $progressData->max
+);
+
 
 // --- Get data ---
-$moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log, $progress) {
-  $payloads = [];
+$moco->profilesEachBatch(function (SimpleXMLElement $profiles)
+                                  use ($redis, $log, $progress, $progressData) {
 
+  // Initiate Redis transcation.
   $ret = $redis->multi();
   try {
     foreach ($profiles->profile as $profile) {
       // Monitor progress.
-      try {
-        $progress->advance();
-      } catch (InvalidArgumentException $e) {
-        // Ignore current > max error.
-      } catch (Exception $e) {
-        // Log other errors.
-        $log->error($e);
-      }
+      $progress->update(
+        ++$progressData->current,
+        $progressData->current . '/' . $progressData->max
+      );
 
       // Get status.
       // @see: https://mobilecommons.zendesk.com/hc/en-us/articles/202052284-Profiles
@@ -91,8 +96,8 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
       // Skip undeliverables.
       if ($status === 'undeliverable') {
         $log->debug('{current} of {max}: Skipping #{phone} as undeliverable', [
-          'current' => $progress->getRegistry()->getValue('current'),
-          'max'     => $progress->getRegistry()->getValue('max'),
+          'current' => $progressData->current,
+          'max'     => $progressData->max,
           'phone'   => $phoneNumber
         ]);
         continue;
@@ -100,8 +105,8 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
 
       // Process.
       $log->debug('{current} of {max}: Processing #{phone}', [
-        'current' => $progress->getRegistry()->getValue('current'),
-        'max'     => $progress->getRegistry()->getValue('max'),
+        'current' => $progressData->current,
+        'max'     => $progressData->max,
         'phone'   => $phoneNumber
       ]);
 
@@ -124,8 +129,12 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles) use ($redis, $log
 }, $argPage, $argLast);
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
-if ($progress->getRegistry()->getValue('current') < $progressMax) {
-  $progress->update($progressMax);
+if ($progressData->current < $progressData->max) {
+  $progress->update(
+    $progressData->max,
+    $progressData->max . '/' . $progressData->max
+  );
 }
+$progress->finish();
 
 $redisRead->close();
