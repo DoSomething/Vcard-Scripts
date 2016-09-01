@@ -134,7 +134,7 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
         }
       }
 
-      $ret->hSet($key, 'northstar_processed', 1);
+      $ret->hSet($key, 'step2_status', 1);
     }
 
     // Batch processed.
