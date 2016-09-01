@@ -16,15 +16,16 @@ A collection of scripts for DoSomething Lose Your Vcard campaign
 ## Usage
 ### Step 1: Save all MoCo profiles to Redis
 ```
-$ php 1-get-users-from-moco.php --help
 Usage:
   1-get-users-from-moco.php [options]
 
 Options:
-  -p, --page <page>    MoCo profiles start page, defaults to 1
-  -l, --last <page>    MoCo profiles last page, defaults to 0
-  -b, --batch <1-1000> MoCo profiles batch size, defaults to 100
-  -h, --help           Show this help
+  -p, --page <int>                        MoCo profiles start page, defaults to 1
+  -l, --last <int>                        MoCo profiles last page, defaults to 0
+  -b, --batch <1-1000>                    MoCo profiles batch size, defaults to 100
+  -s, --sleep <0-60>                      Sleep between MoCo calls, defaults to 0
+  --test-phones <15551111111,15551111112> Comma separated phone numbers. Intended for tests
+  -h, --help                              Show this help
 ```
 
 ### Step 2: Match MoCo users to Northstar and generate new fields
@@ -40,7 +41,15 @@ Options:
 ```
 
 ### Step 3: Update MoCo profiles
-TODO
+```
+Usage:
+  3-save-profile-updates-to-moco.php [options]
+
+Options:
+  -i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
+  -l, --last <int>     A number of last successfully saved element. Works only with unchanged hashes
+  -h, --help           Show this help
+```
 
 ### Benchmarks
 ##### Batch 100, pages 30
