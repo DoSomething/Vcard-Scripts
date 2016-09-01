@@ -133,7 +133,7 @@ $moco->profilesEachBatch(function (SimpleXMLElement $profiles)
 }, $argPage, $argLast);
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
-if ($progressData->current < $progressData->max) {
+if ($progressData->current != $progressData->max) {
   $progress->update(
     $progressData->max,
     $progressData->max . '/' . $progressData->max
