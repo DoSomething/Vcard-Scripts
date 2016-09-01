@@ -102,11 +102,21 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
       $link = $baseURL;
       $link .= '?source=';
       $link .= $link_source;
-      if (empty($mocoRedisUser['vcard_share_url_full'])) {
+
+      $noMocoLink = empty($mocoRedisUser['vcard_share_url_full']);
+      $linkUpdated = !$noMocoLink && $mocoRedisUser['vcard_share_url_full'] !== $link;
+      if ($noMocoLink || $linkUpdated) {
+        if ($linkUpdated) {
+          $log->debug('Replacing old link {old_link} with new link {new_link}', [
+            'old_link'   => $mocoRedisUser['vcard_share_url_full'],
+            'new_link'   => $link,
+          ]);
+        }
         $ret->hSet($key, 'vcard_share_url_full', $link);
       }
 
-      if (empty($mocoRedisUser['vcard_share_url_id'])) {
+
+      if (empty($mocoRedisUser['vcard_share_url_id']) || $linkUpdated) {
         $log->debug('Generating bitly link for {link}', [
           'link'   => $link,
         ]);
