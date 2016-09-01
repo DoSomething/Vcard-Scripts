@@ -39,7 +39,8 @@ $logNamePrefix = $moco->batchSize
  . '-get-users-from-moco-';
 
 // File.
-$logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'output.log', "w");
+$mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
+$logfile = fopen($mainLogName, "w");
 $logFileStream = new StreamHandler($logfile);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
@@ -48,6 +49,9 @@ $logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'warning.log', "w");
 $logFileStream = new StreamHandler($logfile, Logger::WARNING);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
+
+// Display main log filename.
+echo 'Logging to ' . $mainLogName . PHP_EOL;
 
 // --- Progress ---
 // Current count: https://secure.mcommons.com/profiles?count_only=true

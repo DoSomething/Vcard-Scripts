@@ -43,7 +43,7 @@ $logFileStream = new StreamHandler($logfile, Logger::WARNING);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
 
-// Show log.
+// Display main log filename.
 echo 'Logging to ' . $mainLogName . PHP_EOL;
 
 // --- Progress ---
