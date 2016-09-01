@@ -93,6 +93,11 @@ $progress = new ProgressBar(
 
 // --- Get data ---
 while ($profiles = $moco->profilesEachBatch($progressData->page++, $argLastPage)) {
+  // var_dump(
+  //   round(memory_get_usage()/1048576,2)." megabytes",
+  //   round(memory_get_usage(true)/1048576,2)." megabytes"
+  // );
+
   // Initiate Redis transcation.
   $ret = $redis->multi();
   try {
@@ -157,6 +162,9 @@ while ($profiles = $moco->profilesEachBatch($progressData->page++, $argLastPage)
     $ret->discard();
     throw $e;
   }
+
+  // Force garbage collector.
+  gc_collect_cycles();
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.

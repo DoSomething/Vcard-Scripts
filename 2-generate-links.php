@@ -142,7 +142,8 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
     throw $e;
   }
 
-
+  // Force garbage collector.
+  gc_collect_cycles();
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
