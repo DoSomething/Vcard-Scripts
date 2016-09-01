@@ -21,13 +21,13 @@ $moco_config = array(
 );
 
 // --- Imports ---
+use Monolog\Logger;
+use Monolog\Processor\PsrLogMessageProcessor;
+use Zend\ProgressBar\Adapter\Console as AdapterConsole;
+
+// --- DS Imports ---
 use DoSomething\Northstar\NorthstarClient;
 use DoSomething\Vcard\MobileCommonsLoader;
-use Monolog\Logger;
-// use Monolog\Handler\StreamHandler;
-// use Monolog\Handler\ErrorLogHandler;
-use Monolog\Processor\PsrLogMessageProcessor;
-// use Monolog\Formatter\LineFormatter;
 
 // --- Logger ---
 $log = new Logger('vcard');
@@ -57,3 +57,11 @@ $redisRead = new Redis();
 $redisRead->connect(REDIS_HOST, REDIS_PORT);
 define("REDIS_KEY", 'vcard:moco_users');
 define('REDIS_SCAN_COUNT', 100);
+// Zend Progress Bar
+$progressAdapter = new AdapterConsole();
+$progressAdapter->setElements([
+  AdapterConsole::ELEMENT_PERCENT,
+  AdapterConsole::ELEMENT_BAR,
+  AdapterConsole::ELEMENT_TEXT,
+  AdapterConsole::ELEMENT_ETA,
+]);
