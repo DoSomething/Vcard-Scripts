@@ -14,6 +14,7 @@ $opts = CLIOpts\CLIOpts::run("
 -l, --last <int> MoCo profiles last page, defaults to 0
 -b, --batch <1-1000> MoCo profiles batch size, defaults to 100
 -s, --sleep <0-60> Sleep between MoCo calls, defaults to 0
+--test-phones <15551111111,15551111112> Comma separated phone numbers. Intended for tests
 -h, --help Show this help
 ");
 
@@ -24,11 +25,27 @@ $argLastPage = !empty($args['last']) ? (int) $args['last'] : 0;
 if (!empty($args['batch']) && $args['batch'] >= 1 && $args['batch'] <= 1000) {
   $moco->batchSize = (int) $args['batch'];
 }
-$argBatchSize = $moco->batchSize;
 
 if (!empty($args['sleep']) && $args['sleep'] >= 1 && $args['sleep'] <= 60) {
   $moco->sleep = (int) $args['sleep'];
 }
+
+// Override data if test phones are provided.
+if (!empty($args['test-phones'])) {
+  $matches = null;
+  preg_match_all('/1[0-9]{10}/', $args['test-phones'], $matches);
+  $argPhones = reset($matches);
+  if (!empty($argPhones)) {
+    // Phones found.
+    $argFirstPage  = 1;
+    $argLastPage  = count($argPhones);
+    $moco->batchSize = 1;
+    $moco->testPhones = $argPhones;
+  }
+}
+
+// Save batch size to a convenience variable.
+$argBatchSize = $moco->batchSize;
 
 // --- Imports ---
 use Carbon\Carbon;
