@@ -40,25 +40,19 @@ class MobileCommonsLoader
 
     $response = $this->moco->profiles($params);
 
-    if (empty($response->profiles)) {
+    if (!count($response->profiles->children())) {
       $this->log->debug(
         'No more profiles to load, stopped on page {page}',
-        [
-          'page' => $page,
-        ]
+        ['page' => $page]
       );
-      return ($page > 1);
+      return false;
     }
 
     if ($this->sleep > 0) {
       sleep($this->sleep);
     }
 
-    $profiles = $response->profiles;
-    if ($profiles) {
-      return $profiles;
-    }
-    return false;
+    return $response->profiles;
   }
 
 }
