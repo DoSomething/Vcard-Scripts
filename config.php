@@ -1,5 +1,8 @@
 <?php
 
+// PHP settings.
+gc_enable();
+
 // --- Composer ---
 require __DIR__ . '/vendor/autoload.php';
 

@@ -20,7 +20,11 @@ class MobileCommonsLoader
     $this->log = $logger;
   }
 
-  function profilesEachBatch($callback, $page = 1, $limit = 0) {
+  function profilesEachBatch($page = 1, $limit = 0) {
+    // Exit on out of bounds.
+    if ($limit != 0 && $page > $limit) {
+      return false;
+    }
     $this->log->debug(
       'Loading profiles from MoCo, batch size {size}, page {page}',
       [
@@ -46,18 +50,15 @@ class MobileCommonsLoader
       return ($page > 1);
     }
 
-    $profiles = $response->profiles;
-    $numReturned = (int) $profiles->profile->count();
-
-    $callback($profiles);
-
     if ($this->sleep > 0) {
       sleep($this->sleep);
     }
 
-    if ($limit == 0 || $page < $limit) {
-      return $this->profilesEachBatch($callback, $page + 1, $limit);
+    $profiles = $response->profiles;
+    if ($profiles) {
+      return $profiles;
     }
+    return false;
   }
 
 }
