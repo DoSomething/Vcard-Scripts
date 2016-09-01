@@ -63,7 +63,7 @@ $northstarLoader = new NorthstarLoader($northstar, $log);
 $redisRead->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUNT)) {
 
-  // Redis transcation.
+  // Initiate Redis transcation.
   $ret = $redis->multi();
 
   // Process batch.
