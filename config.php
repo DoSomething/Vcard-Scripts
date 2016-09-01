@@ -48,5 +48,7 @@ $northstar = new NorthstarClient($northstar_config);
 $moco = new MobileCommonsLoader($moco_config, $log);
 $redis = new Redis();
 $redis->pconnect(REDIS_HOST, REDIS_PORT);
+$redisRead = new Redis();
+$redisRead->connect(REDIS_HOST, REDIS_PORT);
 define("REDIS_KEY", 'vcard:moco_users');
 define('REDIS_SCAN_COUNT', 2);

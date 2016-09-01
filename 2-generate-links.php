@@ -8,15 +8,21 @@ $opts = CLIOpts\CLIOpts::run("
 {self}
 -i, --iterator <int> Last iterator value
 -l, --last <int> Last current count
+-u, --url <url> Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
 ");
 
 $args = (array) $opts;
+$baseURL = !empty($args['url']) ? $args['url'] : 'https://www.dosomething.org/us/campaigns/lose-your-v-card';
 $iterator = !empty($args['iterator']) ? (int) $args['iterator'] : NULL;
 
 // --- Imports ---
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Carbon\Carbon;
 use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+
+// --- DS Imports ---
+use DoSomething\Vcard\NorthstarLoader;
 
 // --- Logger ---
 $logNamePrefix = REDIS_SCAN_COUNT
@@ -24,7 +30,8 @@ $logNamePrefix = REDIS_SCAN_COUNT
  . '-generate-links-';
 
 // File.
-$logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'output.log', "w");
+$mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
+$logfile = fopen($mainLogName, "w");
 $logFileStream = new StreamHandler($logfile);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
@@ -34,38 +41,73 @@ $logFileStream = new StreamHandler($logfile, Logger::WARNING);
 $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
 $log->pushHandler($logFileStream);
 
+// Show log.
+echo 'Logging to ' . $mainLogName . PHP_EOL;
+
 // --- Progress ---
 $progressCurrent = !empty($args['last']) ? (int) $args['last'] : 0;
-$progressMax = $redis->dbSize();
+$progressMax = $redisRead->dbSize();
 $progress = new \ProgressBar\Manager(0, $progressMax);
 $progress->update($progressCurrent);
 
 // --- Get data ---
 // Retry when we get no keys back.
-$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
-while($keysBatch = $redis->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUNT)) {
-  foreach($keysBatch as $key) {
-    // Monitor progress.
-    try {
-      $progress->advance();
-    } catch (InvalidArgumentException $e) {
-      // Ignore current > max error.
-    } catch (Exception $e) {
-      // Log other errors.
-      $log->error($e);
+$northstarLoader = new NorthstarLoader($northstar, $log);
+$redisRead->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUNT)) {
+
+  // Redis transcation.
+  $ret = $redis->multi();
+
+  // Process batch.
+  try {
+    foreach($keysBatch as $key) {
+      // Monitor progress.
+      try {
+        $progress->advance();
+      } catch (InvalidArgumentException $e) {
+        // Ignore current > max error.
+      } catch (Exception $e) {
+        // Log other errors.
+        $log->error($e);
+      }
+
+      // Load user from redis.
+      $mocoRedisUser = $redisRead->hGetAll($key);
+      $log->debug('{current} of {max}, iterator {it}: Loading user #{phone}', [
+        'current' => $progress->getRegistry()->getValue('current'),
+        'max'     => $progress->getRegistry()->getValue('max'),
+        'it'      => $iterator,
+        'phone'   => $mocoRedisUser['phone_number'],
+      ]);
+
+      // Match user on Northstar
+      $northstarUser = $northstarLoader->loadFromMocoData($mocoRedisUser);
+      if ($northstarUser) {
+        $updateValues = [
+          'northstar_id' => $northstarUser->id,
+          'birthdate' => Carbon::parse((string) $northstarUser->birthdate)->format('Y-m-d'),
+        ];
+        $ret->hMSet($key, $updateValues);
+        $link_source = 'user/' . $northstarUser->id;
+      } else {
+        $link_source = 'mcuser/' . $mocoRedisUser['id'];
+      }
+
+      $link = $baseURL;
+      $link .= '?source=';
+      $link .= $link_source;
+      $ret->hSet($key, 'vcard_share_url_full', $link);
     }
 
-    $mocoUser = $redis->hGetAll($key);
-
-    $log->debug('{current} of {max}, iterator {it}: Processing #{phone}', [
-      'current' => $progress->getRegistry()->getValue('current'),
-      'max'     => $progress->getRegistry()->getValue('max'),
-      'it'      => $iterator,
-      'phone'   => $mocoUser['phone_number'],
-    ]);
-
+    // Batch processed.
+    $ret->exec();
+  } catch (Exception $e) {
+    $ret->discard();
+    throw $e;
   }
-  // Process new batch.
+
+
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
@@ -73,4 +115,4 @@ if ($progress->getRegistry()->getValue('current') < $progressMax) {
   $progress->update($progressMax);
 }
 
-$redis->close();
+$redisRead->close();

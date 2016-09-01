@@ -128,4 +128,4 @@ if ($progress->getRegistry()->getValue('current') < $progressMax) {
   $progress->update($progressMax);
 }
 
-$redis->close();
+$redisRead->close();
