@@ -6,9 +6,10 @@ require 'config.php';
 // ---  Options ---
 $opts = CLIOpts\CLIOpts::run("
 {self}
--i, --iterator <int> Last iterator value
--l, --last <int> Last current count
+-i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
+-l, --last <int> A number of last successfully saved element. Works only with unchanged hashes
 -u, --url <url> Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
+-h, --help Show this help
 ");
 
 $args = (array) $opts;
@@ -102,11 +103,21 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
       $link = $baseURL;
       $link .= '?source=';
       $link .= $link_source;
-      if (empty($mocoRedisUser['vcard_share_url_full'])) {
+
+      $noMocoLink = empty($mocoRedisUser['vcard_share_url_full']);
+      $linkUpdated = !$noMocoLink && $mocoRedisUser['vcard_share_url_full'] !== $link;
+      if ($noMocoLink || $linkUpdated) {
+        if ($linkUpdated) {
+          $log->debug('Replacing old link {old_link} with new link {new_link}', [
+            'old_link'   => $mocoRedisUser['vcard_share_url_full'],
+            'new_link'   => $link,
+          ]);
+        }
         $ret->hSet($key, 'vcard_share_url_full', $link);
       }
 
-      if (empty($mocoRedisUser['vcard_share_url_id'])) {
+
+      if (empty($mocoRedisUser['vcard_share_url_id']) || $linkUpdated) {
         $log->debug('Generating bitly link for {link}', [
           'link'   => $link,
         ]);
