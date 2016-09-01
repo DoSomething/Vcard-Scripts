@@ -8,28 +8,24 @@ $opts = CLIOpts\CLIOpts::run("
 {self}
 -i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
 -l, --last <int> A number of last successfully saved element. Works only with unchanged hashes
--u, --url <url> Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
 -h, --help Show this help
 ");
 
 $args = (array) $opts;
-$baseURL = !empty($args['url']) ? $args['url'] : 'https://www.dosomething.org/us/campaigns/lose-your-v-card';
 $iterator = !empty($args['iterator']) ? (int) $args['iterator'] : NULL;
 
 // --- Imports ---
-use Carbon\Carbon;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Zend\ProgressBar\ProgressBar;
 
 // --- DS Imports ---
-use DoSomething\Vcard\NorthstarLoader;
 
 // --- Logger ---
 $logNamePrefix = REDIS_SCAN_COUNT
  . '-' . ($iterator ?: 0)
- . '-generate-links-';
+ . '-save-profiles-to-moco-';
 
 // File.
 $mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
@@ -59,7 +55,6 @@ $progress = new ProgressBar(
 
 // --- Get data ---
 // Retry when we get no keys back.
-$northstarLoader = new NorthstarLoader($northstar, $log);
 $redisRead->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUNT)) {
 
@@ -77,7 +72,7 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 
       // Load user from redis.
       $mocoRedisUser = $redisRead->hGetAll($key);
-      $log->debug('{current} of {max}, iterator {it}: Loading user #{phone}, MoCo id {id}', [
+      $log->debug('{current} of {max}, iterator {it}: Saving user #{phone}, MoCo id {id}', [
         'current' => $progressData->current,
         'max'     => $progressData->max,
         'it'      => $iterator,
@@ -85,56 +80,7 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
         'id'      => $mocoRedisUser['id'],
       ]);
 
-      // Match user on Northstar
-      $northstarUser = $northstarLoader->loadFromMocoData($mocoRedisUser);
-      if ($northstarUser) {
-        $log->debug('Matched Northstar user id {northstar_id} with MoCo id {id}', [
-          'northstar_id' => $northstarUser->id,
-          'id' => $mocoRedisUser['id'],
-        ]);
-        $updateValues = [
-          'northstar_id' => $northstarUser->id,
-          'birthdate' => Carbon::parse((string) $northstarUser->birthdate)->format('Y-m-d'),
-        ];
-        $ret->hMSet($key, $updateValues);
-        $link_source = 'user/' . $northstarUser->id;
-      } else {
-        $link_source = 'mcuser/' . $mocoRedisUser['id'];
-      }
 
-      $link = $baseURL;
-      $link .= '?source=';
-      $link .= $link_source;
-
-      $noMocoLink = empty($mocoRedisUser['vcard_share_url_full']);
-      $linkUpdated = !$noMocoLink && $mocoRedisUser['vcard_share_url_full'] !== $link;
-      if ($noMocoLink || $linkUpdated) {
-        if ($linkUpdated) {
-          $log->debug('Replacing old link {old_link} with new link {new_link}', [
-            'old_link'   => $mocoRedisUser['vcard_share_url_full'],
-            'new_link'   => $link,
-          ]);
-        }
-        $ret->hSet($key, 'vcard_share_url_full', $link);
-      }
-
-
-      if (empty($mocoRedisUser['vcard_share_url_id']) || $linkUpdated) {
-        $log->debug('Generating bitly link for {link}', [
-          'link'   => $link,
-        ]);
-        $bitlyLink = $bitly->Shorten(["longUrl" => $link]);
-        if (!empty($bitlyLink['url'])) {
-          $shortenedLink = $bitlyLink['url'];
-          $log->debug('Shortened link for {link} is {shortened_link}', [
-            'link'           => $link,
-            'shortened_link' => $shortenedLink,
-          ]);
-          $ret->hSet($key, 'vcard_share_url_id', $shortenedLink);
-        }
-      }
-
-      $ret->hSet($key, 'northstar_processed', 1);
     }
 
     // Batch processed.
