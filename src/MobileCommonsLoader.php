@@ -14,6 +14,7 @@ class MobileCommonsLoader
   private $log = false;
   public $batchSize = 100;
   public $sleep = 0;
+  public $testPhones = [];
 
   function __construct(Array $config, LoggerInterface $logger) {
     $this->moco = new \MobileCommons($config);
@@ -37,8 +38,22 @@ class MobileCommonsLoader
       'limit' => $this->batchSize,
       'page' => $page,
     ];
+    // Test phones param.
+    if (!empty($this->testPhones)) {
+      $params['phone_number'] = implode(',', $this->testPhones);
+    }
 
     $response = $this->moco->profiles($params);
+    if ($response->error->count()) {
+      $this->log->error(
+        'Error during loading data from MoCo: id: {id}, message: {message}',
+        [
+          'id'      => $response->error['id'],
+          'message' => $response->error['message'],
+        ]
+      );
+      throw new \Exception($response->error['message']);
+    }
 
     if (!count($response->profiles->children())) {
       $this->log->debug(
