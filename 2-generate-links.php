@@ -6,9 +6,10 @@ require 'config.php';
 // ---  Options ---
 $opts = CLIOpts\CLIOpts::run("
 {self}
--i, --iterator <int> Last iterator value
--l, --last <int> Last current count
+-i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
+-l, --last <int> A number of last successfully saved element. Works only with unchanged hashes
 -u, --url <url> Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
+-h, --help Show this help
 ");
 
 $args = (array) $opts;

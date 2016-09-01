@@ -27,7 +27,22 @@ Options:
   -h, --help           Show this help
 ```
 
-#### Benchmark
+### Step 2: Match MoCo users to Northstar and generate new fields
+```
+Usage:
+  2-generate-links.php [options]
+
+Options:
+  -i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
+  -l, --last <int>     A number of last successfully saved element. Works only with unchanged hashes
+  -u, --url <url>      Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
+  -h, --help           Show this help
+```
+
+### Step 3: Update MoCo profiles
+TODO
+
+### Benchmarks
 ##### Batch 100, pages 30
 ```
 $ time php 1-get-users-from-moco.php -l 30 -b 100
@@ -43,9 +58,3 @@ $ time php 1-get-users-from-moco.php -l 3 -b 1000
 php 1-get-users-from-moco.php -l 3 -b 1000  2.01s user 0.42s system 2% cpu 1:23.68 total
 ```
 Result: 623 users.
-
-### Step 2: Match MoCo users to Northstar and generate new fields
-TODO
-
-### Step 3: Update MoCo profiles
-TODO
