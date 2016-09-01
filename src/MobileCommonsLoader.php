@@ -70,4 +70,21 @@ class MobileCommonsLoader
     return $response->profiles;
   }
 
+  function updateProfile(Array $profile) {
+    $response = $this->moco->profiles_update($profile);
+    $success = ((string) $response['success']) === "true";
+    if (!$success) {
+      $this->log->error(
+        'Failed saving profile #{phone}: id: {id}, message: {message}',
+        [
+          'phone'   => $profile['phone_number'],
+          'id'      => $response->error['id'],
+          'message' => $response->error['message'],
+        ]
+      );
+      return false;
+    }
+    return true;
+  }
+
 }
