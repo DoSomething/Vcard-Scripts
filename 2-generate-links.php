@@ -119,20 +119,20 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
       }
 
 
-      if (empty($mocoRedisUser['vcard_share_url_id']) || $linkUpdated) {
-        $log->debug('Generating bitly link for {link}', [
-          'link'   => $link,
-        ]);
-        $bitlyLink = $bitly->Shorten(["longUrl" => $link]);
-        if (!empty($bitlyLink['url'])) {
-          $shortenedLink = $bitlyLink['url'];
-          $log->debug('Shortened link for {link} is {shortened_link}', [
-            'link'           => $link,
-            'shortened_link' => $shortenedLink,
-          ]);
-          $ret->hSet($key, 'vcard_share_url_id', $shortenedLink);
-        }
-      }
+      // if (empty($mocoRedisUser['vcard_share_url_id']) || $linkUpdated) {
+      //   $log->debug('Generating bitly link for {link}', [
+      //     'link'   => $link,
+      //   ]);
+      //   $bitlyLink = $bitly->Shorten(["longUrl" => $link]);
+      //   if (!empty($bitlyLink['url'])) {
+      //     $shortenedLink = $bitlyLink['url'];
+      //     $log->debug('Shortened link for {link} is {shortened_link}', [
+      //       'link'           => $link,
+      //       'shortened_link' => $shortenedLink,
+      //     ]);
+      //     $ret->hSet($key, 'vcard_share_url_id', $shortenedLink);
+      //   }
+      // }
 
       $ret->hSet($key, 'step2_status', 1);
     }
