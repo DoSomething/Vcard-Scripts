@@ -31,13 +31,13 @@ class NorthstarLoader
     // Strip US +1 code from the beginning.
     if (strlen($phoneNumber) === 11 && $phoneNumber[0] === '1') {
       $shortenedPhoneNumber = substr($phoneNumber, 1);
-    }
-    $this->log->debug('Loading by shortened phone #{phone}', [
-      'phone'   => $shortenedPhoneNumber,
-    ]);
-    $northstarUser = $this->client->getUser('mobile', $shortenedPhoneNumber);
-    if ($northstarUser) {
-      return $northstarUser;
+      $this->log->debug('Loading by shortened phone #{phone}', [
+        'phone'   => $shortenedPhoneNumber,
+      ]);
+      $northstarUser = $this->client->getUser('mobile', $shortenedPhoneNumber);
+      if ($northstarUser) {
+        return $northstarUser;
+      }
     }
 
     // Second, load by full phone number.
