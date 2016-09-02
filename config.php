@@ -68,7 +68,7 @@ $northstar = new NorthstarClient($northstar_config);
 // Mobile Commons
 $moco = new MobileCommonsLoader($moco_config, $log);
 // Bitly
-$bitly = new \Hpatoio\Bitly\Client(BITLY_ACCESS_TOKEN);
+// $bitly = new \Hpatoio\Bitly\Client(BITLY_ACCESS_TOKEN);
 // Redis
 $redis = new Redis();
 $redis->pconnect(REDIS_HOST, REDIS_PORT);

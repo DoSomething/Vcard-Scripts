@@ -91,7 +91,8 @@ while($keysBatch = $redisRead->scan($iterator, REDIS_KEY . ':*', REDIS_SCAN_COUN
 
       $mocoProfileUpdate = [
         'phone_number'       => $mocoRedisUser['phone_number'],
-        'vcard_share_url_id' => $mocoRedisUser['vcard_share_url_id'],
+        // 'vcard_share_url_id' => $mocoRedisUser['vcard_share_url_id'],
+        'vcard_share_url_full' => $mocoRedisUser['vcard_share_url_full'],
       ];
       if (!empty($mocoRedisUser['northstar_id'])) {
         $mocoProfileUpdate['northstar_id']  = $mocoRedisUser['northstar_id'];
