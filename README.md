@@ -46,9 +46,9 @@ Usage:
   3-save-profile-updates-to-moco.php [options]
 
 Options:
-  -i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
-  -l, --last <int>     A number of last successfully saved element. Works only with unchanged hashes
-  -h, --help           Show this help
+  -f, --from <int> Last element to load, default 0
+  -t, --to <int>   First element to load
+  -h, --help       Show this help
 ```
 
 ### Benchmarks

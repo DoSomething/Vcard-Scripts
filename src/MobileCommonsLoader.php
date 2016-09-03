@@ -10,6 +10,9 @@ use Psr\Log\LoggerInterface;
 class MobileCommonsLoader
 {
 
+  const RETRY_MAX = 10;
+  const RETRY_PAUSE = 20;
+
   private $moco = false;
   private $log = false;
   public $batchSize = 100;
@@ -70,8 +73,32 @@ class MobileCommonsLoader
     return $response->profiles;
   }
 
-  function updateProfile(Array $profile) {
-    $response = $this->moco->profiles_update($profile);
+  function updateProfile(Array $profile, $retryCount = 0) {
+    try {
+      $response = $this->moco->profiles_update($profile);
+    } catch (\Exception $e) {
+      $retryCount++;
+      if ($retryCount <= self::RETRY_MAX) {
+        $logMessage = 'Retry {count} of {max}.'
+        . ' Caught connection error:'
+        . ' {error}. Sleeping for {pause} seconds';
+        $this->log->warning($logMessage,
+          [
+            'count' => $retryCount,
+            'max'   => self::RETRY_MAX,
+            'error' => $e->getMessage(),
+            'pause' => self::RETRY_PAUSE,
+          ]
+        );
+        sleep(self::RETRY_PAUSE);
+        return $this->updateProfile($profile, $retryCount);
+      } else {
+        throw new \Exception('MoCo profile update failed after max retries: '
+          . $e->getMessage());
+        return false;
+      }
+    }
+
     $success = ((string) $response['success']) === "true";
     if (!$success) {
       $this->log->error(
