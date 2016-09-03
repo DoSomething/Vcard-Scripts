@@ -79,7 +79,7 @@ class NorthstarLoader
       return $this->client->getUser($type, $id);
     } catch (\GuzzleHttp\Exception\ConnectException $e) {
       $retryCount++;
-      if ($retryCount < self::RETRY_MAX) {
+      if ($retryCount <= self::RETRY_MAX) {
         $logMessage = 'Retry {count} of {max}.'
         . ' Caught Guzzle connection error:'
         . ' {error}. Sleeping for {pause} seconds';
