@@ -86,7 +86,23 @@ for (;$progressData->current <= $progressData->max; $progressData->current++) {
 
     // Load user from redis.
     $mocoRedisUser = $redisRead->hGetAll($key);
-    $log->debug('{current} of {max}, Redis key {key}: Loading user #{phone}, MoCo id {id}', [
+
+    if (!empty($mocoRedisUser['step2_status'])) {
+      $logMessage = '{current} of {max}, Redis key {key}.'
+        . ' Skipping processed user #{phone}, MoCo id {id}';
+
+      $log->info($logMessage, [
+        'current' => $progressData->current,
+        'max'     => $progressData->max,
+        'key'     => $key,
+        'phone'   => $mocoRedisUser['phone_number'],
+        'id'      => $mocoRedisUser['id'],
+      ]);
+      $ret->discard();
+      continue;
+    }
+
+    $log->debug('{current} of {max}, Redis key {key}. Loading user #{phone}, MoCo id {id}', [
       'current' => $progressData->current,
       'max'     => $progressData->max,
       'key'     => $key,
