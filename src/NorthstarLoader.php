@@ -12,8 +12,12 @@ use Psr\Log\LoggerInterface;
 class NorthstarLoader
 {
 
+  const RETRY_MAX = 10;
+  const RETRY_PAUSE = 10;
+
   private $client = false;
   private $log = false;
+
   public $batchSize = 100;
   public $sleep = 0;
 
@@ -34,7 +38,7 @@ class NorthstarLoader
       $this->log->debug('Loading by shortened phone #{phone}', [
         'phone'   => $shortenedPhoneNumber,
       ]);
-      $northstarUser = $this->client->getUser('mobile', $shortenedPhoneNumber);
+      $northstarUser = $this->getUser('mobile', $shortenedPhoneNumber);
       if ($northstarUser) {
         return $northstarUser;
       }
@@ -44,7 +48,7 @@ class NorthstarLoader
     $this->log->debug('Loading by full phone #{phone}', [
       'phone'   => $phoneNumber,
     ]);
-    $northstarUser = $this->client->getUser('mobile', $phoneNumber);
+    $northstarUser = $this->getUser('mobile', $phoneNumber);
     if ($northstarUser) {
       return $northstarUser;
     }
@@ -60,7 +64,7 @@ class NorthstarLoader
     $this->log->debug('Loading by email {email}', [
       'email' => $mocoRedisUser['email'],
     ]);
-    $northstarUser = $this->client->getUser('mobile', $phoneNumber);
+    $northstarUser = $this->getUser('mobile', $phoneNumber);
     if ($northstarUser) {
       return $northstarUser;
     }
@@ -68,6 +72,32 @@ class NorthstarLoader
       'phone'   => $phoneNumber,
     ]);
     return false;
+  }
+
+  private function getUser($type, $id, $retryCount = 0) {
+    try {
+      return $this->client->getUser($type, $id);
+    } catch (\GuzzleHttp\Exception\ConnectException $e) {
+      $retryCount++;
+      if ($retryCount < self::RETRY_MAX) {
+        $logMessage = 'Retry {count} of {max}.'
+        . ' Caught Guzzle connection error:'
+        . ' {error}. Sleeping for {pause} seconds';
+        $this->log->warning($logMessage,
+          [
+            'count' => $retryCount,
+            'max'   => self::RETRY_MAX,
+            'error' => $e->getMessage(),
+            'pause' => self::RETRY_PAUSE,
+          ]
+        );
+        sleep(self::RETRY_PAUSE);
+        return $this->getUser($type, $id, $retryCount);
+      } else {
+        throw new \Exception('Northstar loader failed after max retries: ' . $e->getMessage());
+        return false;
+      }
+    }
   }
 
 }

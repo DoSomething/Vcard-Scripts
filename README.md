@@ -34,10 +34,10 @@ Usage:
   2-generate-links.php [options]
 
 Options:
-  -i, --iterator <int> Scan iterator value of last successfully saved batch. Works only with unchanged hashes
-  -l, --last <int>     A number of last successfully saved element. Works only with unchanged hashes
-  -u, --url <url>      Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
-  -h, --help           Show this help
+  -f, --from <int> Last element to load, default 0
+  -t, --to <int>   First element to load
+  -u, --url <url>  Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
+  -h, --help       Show this help
 ```
 
 ### Step 3: Update MoCo profiles
