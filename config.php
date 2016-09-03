@@ -2,6 +2,8 @@
 
 // PHP settings.
 gc_enable();
+ini_set('memory_limit', '-1');
+error_reporting(E_ALL);
 
 // --- Composer ---
 require __DIR__ . '/vendor/autoload.php';
@@ -75,7 +77,6 @@ $redis->pconnect(REDIS_HOST, REDIS_PORT);
 $redisRead = new Redis();
 $redisRead->connect(REDIS_HOST, REDIS_PORT);
 define("REDIS_KEY", 'vcard:moco_users');
-define('REDIS_SCAN_COUNT', 100);
 // Zend Progress Bar
 $progressAdapter = new AdapterConsole();
 $progressAdapter->setElements([
