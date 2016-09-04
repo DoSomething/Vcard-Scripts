@@ -13,7 +13,7 @@ class NorthstarLoader
 {
 
   const RETRY_MAX = 10;
-  const RETRY_PAUSE = 10;
+  const RETRY_PAUSE = 20;
 
   private $client = false;
   private $log = false;
@@ -77,7 +77,7 @@ class NorthstarLoader
   private function getUser($type, $id, $retryCount = 0) {
     try {
       return $this->client->getUser($type, $id);
-    } catch (\GuzzleHttp\Exception\ConnectException $e) {
+    } catch (\GuzzleHttp\Exception\RequestException $e) {
       $retryCount++;
       if ($retryCount <= self::RETRY_MAX) {
         $logMessage = 'Retry {count} of {max}.'
