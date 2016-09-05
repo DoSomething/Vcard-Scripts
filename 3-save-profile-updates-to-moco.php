@@ -145,7 +145,22 @@ for (;$progressData->current <= $progressData->max; $progressData->current++) {
       'fields'  => json_encode($mocoProfileUpdate),
     ]);
 
-    $result = $moco->updateProfile($mocoProfileUpdate);
+    $result = false;
+    try {
+      $result = $moco->updateProfile($mocoProfileUpdate);
+    } catch (\Exception $e) {
+      $logMessage = 'Skipping profile #{phone}, MoCo id {id}:'
+        . ' MoCo exception. Please try again later.';
+
+      $log->error($logMessage, [
+        'phone'   => $mocoRedisUser['phone_number'],
+        'id'      => $mocoRedisUser['id'],
+      ]);
+      $ret->discard();
+      continue;
+    }
+
+
     if ($result) {
       $log->debug('Succesfully saved profile #{phone}, MoCo id {id}', [
         'phone'   => $mocoRedisUser['phone_number'],
