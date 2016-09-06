@@ -124,8 +124,8 @@ for (;$progressData->current <= $progressData->max; $progressData->current++) {
 
     $mocoProfileUpdate = [
       'phone_number'       => $mocoRedisUser['phone_number'],
-      // 'vcard_share_url_id' => $mocoRedisUser['vcard_share_url_id'],
-      'vcard_share_url_full' => $mocoRedisUser['vcard_share_url_full'],
+      // Wrapping URL in parentesses tells Liquid to automatically shorten it.
+      'vcard_share_url_full' => '((' . $mocoRedisUser['vcard_share_url_full'] . '))',
     ];
     if (!empty($mocoRedisUser['northstar_id'])) {
       $mocoProfileUpdate['northstar_id']  = $mocoRedisUser['northstar_id'];
