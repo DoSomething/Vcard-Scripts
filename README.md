@@ -17,7 +17,7 @@ A collection of scripts for DoSomething Lose Your Vcard campaign
 ### Step 1: Save all MoCo profiles to Redis
 ```
 Usage:
-  1-get-users-from-moco.php [options]
+  php 1-get-users-from-moco.php [options]
 
 Options:
   -p, --page <int>                        MoCo profiles start page, defaults to 1
@@ -31,7 +31,7 @@ Options:
 ### Step 2: Match MoCo users to Northstar and generate new fields
 ```
 Usage:
-  2-generate-links.php [options]
+  php 2-generate-links.php [options]
 
 Options:
   -f, --from <int> Last element to load, default 0
@@ -43,7 +43,7 @@ Options:
 ### Step 3: Update MoCo profiles
 ```
 Usage:
-  3-save-profile-updates-to-moco.php [options]
+  php 3-save-profile-updates-to-moco.php [options]
 
 Options:
   -f, --from <int> Last element to load, default 0
