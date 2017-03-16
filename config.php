@@ -5,6 +5,8 @@ gc_enable();
 ini_set('memory_limit', '-1');
 error_reporting(E_ALL);
 
+date_default_timezone_set("America/New_York");
+
 // --- Composer ---
 require __DIR__ . '/vendor/autoload.php';
 
@@ -45,6 +47,7 @@ $moco_config = array(
 use Monolog\Logger;
 use Monolog\Processor\PsrLogMessageProcessor;
 use Zend\ProgressBar\Adapter\Console as AdapterConsole;
+use MongoDB\Client as MongoDB;
 
 // --- DS Imports ---
 use DoSomething\Northstar\NorthstarClient;
@@ -63,20 +66,21 @@ $output = "[%datetime%] %level_name%: %message%.";
 // $logConsoleStream->setFormatter(new LineFormatter($output, $dateFormat));
 // $log->pushHandler($logConsoleStream);
 
-
 // --- Objects ---
 // Northstar.
 $northstar = new NorthstarClient($northstar_config);
 // Mobile Commons
 $moco = new MobileCommonsLoader($moco_config, $log);
+
+$mongo_db = new MongoDB();
 // Bitly
 // $bitly = new \Hpatoio\Bitly\Client(BITLY_ACCESS_TOKEN);
 // Redis
-$redis = new Redis();
-$redis->pconnect(REDIS_HOST, REDIS_PORT);
-$redisRead = new Redis();
-$redisRead->connect(REDIS_HOST, REDIS_PORT);
-define("REDIS_KEY", 'vcard:moco_users');
+// $redis = new Redis();
+// $redis->pconnect(REDIS_HOST, REDIS_PORT);
+// $redisRead = new Redis();
+// $redisRead->connect(REDIS_HOST, REDIS_PORT);
+// define("REDIS_KEY", 'vcard:moco_users');
 // Zend Progress Bar
 $progressAdapter = new AdapterConsole();
 $progressAdapter->setElements([

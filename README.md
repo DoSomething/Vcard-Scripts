@@ -1,20 +1,26 @@
-# Vcard Scripts
-A collection of scripts for DoSomething Lose Your Vcard campaign
+# Mobile Commons Profiles Back up script
+This version of the Vcard Scripts is used to **ONLY** back up MoCo profiles to a local running mongodb instance
 
 ## Requirements
-- PHP 5.6
-- php56-redis
+- PHP 5.6 (brew: php56)
+- MongoDB PHP driver (brew: php56-mongodb)
+- mongodb (brew: mongodb)
+- GNU time (brew: gnu-time) **Optional** _(better stats)_
+- GNU parallel (brew: parallel) **Optional** _(parallel processes)_
 - composer
-- Redis 3.2
 
 ## Setup
+- Install mongodb using brew.
+  - type `mongo` in your CLI. If no errors, 👍. Otherwise, open a new tab and run `mongod`
+- Install `php56` and `php56-mongodb` PHP driver using brew.
+  - Install notes are in the **NOTES** section.
 - `composer install`
 - `cp .env.example .env`
 - Update .env settings
 - `mkdir log`
 
 ## Usage
-### Step 1: Save all MoCo profiles to Redis
+### Save all MoCo profiles to mongodb
 ```
 Usage:
   php 1-get-users-from-moco.php [options]
@@ -23,47 +29,27 @@ Options:
   -p, --page <int>                        MoCo profiles start page, defaults to 1
   -l, --last <int>                        MoCo profiles last page, defaults to 0
   -b, --batch <1-1000>                    MoCo profiles batch size, defaults to 100
-  -s, --sleep <0-60>                      Sleep between MoCo calls, defaults to 0
-  --test-phones <15551111111,15551111112> Comma separated phone numbers. Intended for tests
   -h, --help                              Show this help
 ```
 
-### Step 2: Match MoCo users to Northstar and generate new fields
-```
-Usage:
-  php 2-generate-links.php [options]
-
-Options:
-  -f, --from <int> Last element to load, default 0
-  -t, --to <int>   First element to load
-  -u, --url <url>  Link base url. Defaults to https://www.dosomething.org/us/campaigns/lose-your-v-card
-  -h, --help       Show this help
-```
-
-### Step 3: Update MoCo profiles
-```
-Usage:
-  php 3-save-profile-updates-to-moco.php [options]
-
-Options:
-  -f, --from <int> Last element to load, default 0
-  -t, --to <int>   First element to load
-  -h, --help       Show this help
-```
-
 ### Benchmarks
-##### Batch 100, pages 30
+##### Batch 100, pages 1
 ```
-$ time php 1-get-users-from-moco.php -l 30 -b 100
-3000/3000 [==============================================>] 100.00% 00:00:00
-php 1-get-users-from-moco.php -l 30 -b 100  2.59s user 0.54s system 2% cpu 2:16.96 total
+$ gtime php 1-get-users-from-moco.php -p 1 -l 1 -b 100
+0.19user 0.11system 0:06.19elapsed 5%CPU (0avgtext+0avgdata 272023552maxresident)k
+53inputs+4outputs (1270major+17785minor)pagefaults 0swaps
 ```
-Result: 623 users.
+Result: 100 users.
 
-##### Batch 1000, pages 3
+##### Batch 100, pages 1 x 10000
+##### 6 parallel processes
 ```
-$ time php 1-get-users-from-moco.php -l 3 -b 1000
-3000/3000 [==============================================>] 100.00% 00:00:00
-php 1-get-users-from-moco.php -l 3 -b 1000  2.01s user 0.42s system 2% cpu 1:23.68 total
+$ gtime parallel -j 6 php 1-get-users-from-moco.php -p {1} -l {1} -b 100 :::: <(seq 1 10000)
+1852.75user 697.87system 2:49:02elapsed 25%CPU (0avgtext+0avgdata 430063616maxresident)k
+1405inputs+97362outputs (17065major+206178620minor)pagefaults 0swaps
 ```
-Result: 623 users.
+Result: 1,000,000 users.
+
+## Notes
+- [How to install php56 through brew](https://github.com/Homebrew/homebrew-php)
+- [How to install php56-mongodb PHP driver through brew](http://php.net/manual/en/mongodb.installation.homebrew.php)
