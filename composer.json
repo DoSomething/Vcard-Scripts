@@ -18,7 +18,8 @@
     "josegonzalez/dotenv": "^2.0",
     "nesbot/carbon": "^1.21",
     "hpatoio/bitly-api": "^2.0",
-    "zendframework/zend-progressbar": "^2.5"
+    "zendframework/zend-progressbar": "^2.5",
+    "mongodb/mongodb": "^1.1"
   },
   "autoload": {
     "psr-4": {
