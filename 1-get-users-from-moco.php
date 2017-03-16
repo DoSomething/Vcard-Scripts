@@ -5,7 +5,7 @@ require 'config.php';
 
 // ---  Defines ---
 // Current count: https://secure.mcommons.com/profiles?count_only=true
-define('CURRENT_MOCO_PROFILES_COUNT', 5221749);
+define('CURRENT_MOCO_PROFILES_COUNT', 5759512);
 
 // ---  Options ---
 $opts = CLIOpts\CLIOpts::run("
@@ -19,6 +19,7 @@ $opts = CLIOpts\CLIOpts::run("
 ");
 
 $args = (array) $opts;
+// var_dump($args);
 $argFirstPage = !empty($args['page']) ? (int) $args['page'] : 1;
 $argLastPage = !empty($args['last']) ? (int) $args['last'] : 0;
 
@@ -48,32 +49,11 @@ if (!empty($args['test-phones'])) {
 $argBatchSize = $moco->batchSize;
 
 // --- Imports ---
-use Carbon\Carbon;
+// use Carbon\Carbon;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use Zend\ProgressBar\ProgressBar;
-
-// --- Logger ---
-$logNamePrefix = $argBatchSize
- . '-' . $argFirstPage
- . '-' . $argLastPage
- . '-get-users-from-moco-';
-
-// File.
-$mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
-$logfile = fopen($mainLogName, "w");
-$logFileStream = new StreamHandler($logfile);
-$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
-$log->pushHandler($logFileStream);
-// Warning File.
-$logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'warning.log', "w");
-$logFileStream = new StreamHandler($logfile, Logger::WARNING);
-$logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
-$log->pushHandler($logFileStream);
-
-// Display main log filename.
-echo 'Logging to ' . $mainLogName . PHP_EOL;
+// use Zend\ProgressBar\ProgressBar;
 
 // --- Progress ---
 // First element.
@@ -102,11 +82,14 @@ $progressData = (object) [
 ];
 
 // Setup progress bar.
-$progress = new ProgressBar(
-  $progressAdapter,
-  $progressData->current,
-  $progressData->max
-);
+// $progress = new ProgressBar(
+//   $progressAdapter,
+//   $progressData->current,
+//   $progressData->max
+// );
+
+$parsed_users = [];
+$users_collection = $mongo_db->moco->users;
 
 // --- Get data ---
 while ($profiles = $moco->profilesEachBatch($progressData->page++, $argLastPage)) {
@@ -116,67 +99,114 @@ while ($profiles = $moco->profilesEachBatch($progressData->page++, $argLastPage)
   // );
 
   // Initiate Redis transcation.
-  $ret = $redis->multi();
+  // $ret = $redis->multi();
   try {
     foreach ($profiles->profile as $profile) {
-      // Get status.
-      // @see: https://mobilecommons.zendesk.com/hc/en-us/articles/202052284-Profiles
-      $statusTokens = [
-          'Undeliverable' => 'undeliverable', // Phone number can't receive texts
-          'Hard bounce' => 'undeliverable', // Invalid mobile number
-          'No Subscriptions' => 'opted_out', // User is not opted in to any MC campaigns
-          'Texted a STOP word' => 'opted_out', // User opted-out by texting STOP
-          'Active Subscriber' => 'active',
-      ];
+      $attributes = $profile->attributes();
 
-      $phoneNumber = (string) $profile->phone_number;
-
-      // Map to normalized status keywords, or 'unknown' on unknown status
-      $mocoStatus = (string) $profile->status;
-      $status = isset($statusTokens[$mocoStatus]) ? $statusTokens[$mocoStatus] : 'unknown';
-
-      // Skip undeliverables.
-      if ($status === 'undeliverable') {
-        $log->debug('{current} of {max}: Skipping #{phone} as undeliverable', [
-          'current' => $progressData->current,
-          'max'     => $progressData->max,
-          'phone'   => $phoneNumber
-        ]);
-
-        // Monitor progress.
-        $progress->update(
-          ++$progressData->current,
-          $progressData->current . '/' . $progressData->max
-        );
-        continue;
+      /*
+        This is an aggressively conservative check here. All profiles SHOULD have an id attribute DUH,
+        but I can't guarantee MoCo will keep their schema intact over time
+      */
+      if (isset($attributes["id"])) {
+        $id = (string) $attributes["id"];
+      }else {
+        throw new Exception('Does not have profile ID');
       }
 
-      // Process.
-      $log->debug('{current} of {max}: Processing #{phone}', [
-        'current' => $progressData->current,
-        'max'     => $progressData->max,
-        'phone'   => $phoneNumber
-      ]);
-
-      // Monitor progress.
-      $progress->update(
-        ++$progressData->current,
-        $progressData->current . '/' . $progressData->max
-      );
-
-      $createdAt = (string) $profile->created_at;
-      $user = [
-        'id'           => (string) $profile['id'],
-        'phone_number' => $phoneNumber,
-        'email'        => (string) $profile->email,
-        'status'       => $status,
-        'created_at'   => Carbon::parse($createdAt)->format('Y-m-d'),
-      ];
-      $ret->hMSet(REDIS_KEY . ":" . $profile['id'], $user);
+      /*
+        By adding an _id child, we are forcing MongoDB to use this property as the internal,
+        unique _id in the collection when inserting this profile.
+        This is necessary to avoid duplication of MoCo profiles in the back up,
+        while keeping lean and efficient without extra validation logic.
+        If a collition is detected when bulk inseting, mongo will not insert a duplicate.
+      */
+      $profile->addChild("_id", "$id");
+      array_push($parsed_users, $profile);
     }
-    $ret->exec();
+    // $ret->exec();
+
+    /*
+      We do a bulk insert of all profiles.
+      Not requiring order allows the bulk insert to skip failed insertions
+      but continue to insert as many as possible.
+    */
+    $insertion = $users_collection->insertMany($parsed_users, [ "ordered" => false ]);
+    printf("Inserted %d document(s)\n", $insertion->getInsertedCount());
+
+  /*
+    Here we catch all failed writes to the DB.
+    The ids and index of the failed profiles is logged here.
+  */
+  } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+
+    // --- Logger ---
+    $logNamePrefix = $argBatchSize
+     . '-' . $argFirstPage
+     . '-' . $argLastPage
+     . '-get-users-from-moco-';
+
+    // File.
+    $mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
+    $logfile = fopen($mainLogName, "w");
+    $logFileStream = new StreamHandler($logfile);
+    $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+    $log->pushHandler($logFileStream);
+    // Warning File.
+    $logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'warning.log', "w");
+    $logFileStream = new StreamHandler($logfile, Logger::WARNING);
+    $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+    $log->pushHandler($logFileStream);
+
+
+    $writeResult = $e->getWriteResult();
+
+    if ($writeErrors = $writeResult->getWriteErrors()) {
+
+      function parse($error) {
+        $message = $error->getMessage();
+        $index = $error->getIndex();
+        return "MESSAGE: $message. INDEX: $index";
+      }
+
+      $errors_to_be_logged = array_map("parse", $writeErrors);
+
+      print(implode(PHP_EOL, $errors_to_be_logged));
+
+      // Log write exception. Most likely triggered by am _id collition
+      $log->debug("{error}", ["error" => implode(PHP_EOL, $errors_to_be_logged)]);
+    }
+    // throw $e;
+
   } catch (Exception $e) {
-    $ret->discard();
+
+
+    /*
+      TODO: This is a horrible copy/paste non-DRY way of using this logger,
+      but as it is a script that it will rarely be used (sure), I feel less horrible
+      about it,
+    */
+
+    // --- Logger ---
+    $logNamePrefix = $argBatchSize
+     . '-' . $argFirstPage
+     . '-' . $argLastPage
+     . '-get-users-from-moco-';
+
+    // File.
+    $mainLogName = __DIR__ . '/log/' . $logNamePrefix . 'output.log';
+    $logfile = fopen($mainLogName, "w");
+    $logFileStream = new StreamHandler($logfile);
+    $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+    $log->pushHandler($logFileStream);
+    // Warning File.
+    $logfile = fopen(__DIR__ . '/log/' . $logNamePrefix . 'warning.log', "w");
+    $logFileStream = new StreamHandler($logfile, Logger::WARNING);
+    $logFileStream->setFormatter(new LineFormatter($output . "\n", $dateFormat));
+    $log->pushHandler($logFileStream);
+
+    // $ret->discard();
+    $log->debug("{error}", ["error" => $e->getMessage()]);
     throw $e;
   }
 
@@ -185,12 +215,12 @@ while ($profiles = $moco->profilesEachBatch($progressData->page++, $argLastPage)
 }
 
 // Set 100% when estimated $progressMax turned out to be incorrect.
-if ($progressData->current != $progressData->max) {
-  $progress->update(
-    $progressData->max,
-    $progressData->max . '/' . $progressData->max
-  );
-}
-$progress->finish();
+// if ($progressData->current != $progressData->max) {
+//   $progress->update(
+//     $progressData->max,
+//     $progressData->max . '/' . $progressData->max
+//   );
+// }
+// $progress->finish();
 
-$redisRead->close();
+// $redisRead->close();
